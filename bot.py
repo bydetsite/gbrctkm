@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 BOT_TOKEN   = os.getenv("BOT_TOKEN")
-ADMIN_ID    = 580931826                # ← твой Telegram-ID (узнать у @userinfobot)
+ADMIN_ID    = 8444937478                # ← твой Telegram-ID (узнать у @userinfobot)
 USERS_FILE  = pathlib.Path("users.txt")
 
 PATTERN = re.compile(r"send_to'\s*:\s*'AW-(\d+)/([^']+)'")
