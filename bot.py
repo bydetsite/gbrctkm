@@ -5,6 +5,7 @@ from collections import Counter
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
+    CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
     filters,
@@ -12,12 +13,12 @@ from telegram.ext import (
 )
 
 TOKEN       = os.getenv("BOT_TOKEN")
-ADMIN_TG_ID = 8444937478
+ADMIN_TG_ID = 8444937478          # твой ID
 USERS_FILE  = "users.json"
 
+# твой рабочий паттерн (aw_id + awc внутри {...})
 PATTERN = re.compile(
-    r"send_to\s*:\s*['\"]?(?:AW-)?(\d+)/([^'\"\s,}]+)['\"]?",
-    re.IGNORECASE | re.DOTALL
+    r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)'
 )
 
 # ---------- учёт ----------
@@ -41,7 +42,12 @@ async def track_user(user_id: int, username: str | None, context: ContextTypes.D
             text=f"Новый пользователь: @{username or 'без_username'} ({user_id}) → всего {len(users)} человек"
         )
 
-# ---------- логика бота ----------
+# ---------- команды ----------
+async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    total = len(load_users())
+    await update.message.reply_text(f"📊 Всего уникальных пользователей: {total}")
+
+# ---------- основная логика ----------
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     await track_user(user.id, user.username, context)
@@ -81,8 +87,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         clean = text
     await query.message.reply_text(f"📋 Для копирования:\n\n{clean}")
 
+# ---------- запуск ----------
 def main() -> None:
     app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(button_handler, pattern="^copy$"))
     app.run_polling()
