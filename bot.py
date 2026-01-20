@@ -15,7 +15,10 @@ TOKEN       = os.getenv("BOT_TOKEN")
 ADMIN_TG_ID = 8444937478
 USERS_FILE  = "users.json"
 
-PATTERN = re.compile(r"send_to\s*:\s*['\"]AW-(\d+)/([^'\"]+)['\"]")
+PATTERN = re.compile(
+    r"send_to\s*:\s*['\"]?(?:AW-)?(\d+)/([^'\"\s,}]+)['\"]?",
+    re.IGNORECASE | re.DOTALL
+)
 
 # ---------- учёт ----------
 def load_users() -> set:
