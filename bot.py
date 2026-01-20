@@ -1,24 +1,51 @@
 import os
+import json
 import re
 from collections import Counter
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
-    CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
     filters,
     ContextTypes
 )
 
-TOKEN = os.getenv("BOT_TOKEN")
-if not TOKEN:
-    raise RuntimeError("BOT_TOKEN не установлен в окружение")
+TOKEN   = os.getenv("BOT_TOKEN")
+ADMIN_TG_ID = 8444937478          # ← твой ID
 
-# Паттерн для gtag conversion
-PATTERN = re.compile(r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)')
+USERS_FILE = "users.json"
 
+PATTERN = re.compile(
+    r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)'
+)
+
+# ---------- учёт пользователей ----------
+def load_users() -> set:
+    if os.path.isfile(USERS_FILE):
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
+
+def save_users(users: set) -> None:
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(users), f, ensure_ascii=False)
+
+async def track_user(user_id: int, username: str | None, context: ContextTypes.DEFAULT_TYPE) -> None:
+    users = load_users()
+    if user_id not in users:
+        users.add(user_id)
+        save_users(users)
+        await context.bot.send_message(
+            chat_id=ADMIN_TG_ID,
+            text=f"Новый пользователь: @{username or 'без_username'} ({user_id}) → всего {len(users)} человек"
+        )
+
+# ---------- логика бота ----------
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
+    await track_user(user.id, user.username, context)
+
     text = update.message.text or ""
     matches = PATTERN.findall(text)
     if not matches:
@@ -29,7 +56,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     duplicates = {k: v for k, v in counts.items() if v > 1}
     unique = list(counts)
 
-    lines = [f"/?aw={aw_id}&awc={awc}" for aw_id, awc in unique]
+    lines  = [f"/?aw={aw_id}&awc={awc}" for aw_id, awc in unique]
     result = "\n".join(lines)
 
     warn_lines = [
