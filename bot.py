@@ -107,7 +107,6 @@ def main() -> None:
     # НЕ ставим drop_pending_updates=True – чтобы бот «догонял» сообщения
     app.run_polling(
         close_loop=False,
-        stop_signal=None
     )
 
     try:
