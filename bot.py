@@ -16,10 +16,8 @@ TOKEN       = os.getenv("BOT_TOKEN")
 ADMIN_TG_ID = 8444937478          # твой ID
 USERS_FILE  = "users.json"
 
-# твой рабочий паттерн (aw_id + awc внутри {...})
-PATTERN = re.compile(
-    r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)'
-)
+# ➜ ловим send_to: 'AW-<id>/<label>'
+PATTERN = re.compile(r"send_to\s*:\s*['\"]?(?:AW-)?(\d+)/([^'\"\s,}]+)['\"]?")
 
 # ---------- учёт ----------
 def load_users() -> set:
