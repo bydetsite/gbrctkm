@@ -17,7 +17,9 @@ ADMIN_TG_ID = 8444937478          # твой ID
 USERS_FILE  = "users.json"
 
 # ➜ ловим send_to: 'AW-<id>/<label>'
-PATTERN = re.compile(r"send_to\s*:\s*['\"]?(?:AW-)?(\d+)/([^'\"\s,}]+)['\"]?")
+PATTERN = re.compile(
+    r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)'
+)
 
 # ---------- учёт ----------
 def load_users() -> set:
