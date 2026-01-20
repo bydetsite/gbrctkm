@@ -11,16 +11,13 @@ from telegram.ext import (
     ContextTypes
 )
 
-TOKEN   = os.getenv("BOT_TOKEN")
-ADMIN_TG_ID = 8444937478          # ← твой ID
+TOKEN       = os.getenv("BOT_TOKEN")
+ADMIN_TG_ID = 8444937478
+USERS_FILE  = "users.json"
 
-USERS_FILE = "users.json"
+PATTERN = re.compile(r"send_to\s*:\s*['\"]AW-(\d+)/([^'\"]+)['\"]")
 
-PATTERN = re.compile(
-    r'gtag\("event",\s*"conversion",\s*{[^}]*"aw_id":\s*"(\d+)",\s*"awc":\s*"([^"]+)"[^}]*}\)'
-)
-
-# ---------- учёт пользователей ----------
+# ---------- учёт ----------
 def load_users() -> set:
     if os.path.isfile(USERS_FILE):
         with open(USERS_FILE, "r", encoding="utf-8") as f:
@@ -46,19 +43,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user = update.effective_user
     await track_user(user.id, user.username, context)
 
-    text = update.message.text or ""
+    text   = update.message.text or ""
     matches = PATTERN.findall(text)
     if not matches:
         await update.message.reply_text("❌ Не найдено подходящих gtag conversion событий.")
         return
 
-    counts = Counter(matches)
+    counts   = Counter(matches)
+    unique   = list(counts)
+    lines    = [f"/?aw={aw_id}&awc={awc}" for aw_id, awc in unique]
+    result   = "\n".join(lines)
+
     duplicates = {k: v for k, v in counts.items() if v > 1}
-    unique = list(counts)
-
-    lines  = [f"/?aw={aw_id}&awc={awc}" for aw_id, awc in unique]
-    result = "\n".join(lines)
-
     warn_lines = [
         f"⚠️  дубль – /?aw={aw_id}&awc={awc}, встречается {cnt} раз"
         for (aw_id, awc), cnt in duplicates.items()
